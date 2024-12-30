@@ -1,0 +1,63 @@
+% Cytosim property file, pid 8510
+% Wed Apr 24 19:27:47 2024
+
+set simul system
+{
+ time_step            = 0.01;
+ kT                   = 0.0043;
+ viscosity            = 0.000826;
+ random_seed          = 917591991;
+ display              = (style=2; window_size = ( 400 , 400 );  back_color = white);
+}
+
+set space cell
+{
+ property_number      = 1;
+ shape                = rectangle;
+}
+
+set hand strong_hand
+{
+ property_number      = 1;
+ display              = (size = 10 ; color = red);
+}
+
+set single pivot
+{
+ property_number      = 1;
+ hand                 = strong_hand;
+ stiffness            = 1000;
+ confine              = 1, 0, cell;
+ activity             = fixed;
+}
+
+set fiber microtubule
+{
+ property_number      = 1;
+ rigidity             = 9.15203;
+ segmentation         = 0.05;
+ viscosity            = 0.000826;
+ confine              = 0, 0, cell;
+ display              = (color = black ; plus_end = 3);
+}
+
+set hand dynein
+{
+ property_number      = 2;
+ binding              = 5, 0.02;
+ unbinding            = 0.04, 3;
+ display              = (color=blue; size=0.5;);
+ activity             = move;
+ stall_force          = 5;
+ unloaded_speed       = -0.1;
+}
+
+set single grafted
+{
+ property_number      = 2;
+ hand                 = dynein;
+ stiffness            = 100;
+ confine              = 1, 0, cell;
+ activity             = fixed;
+}
+

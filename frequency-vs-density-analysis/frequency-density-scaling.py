@@ -11,10 +11,12 @@ import pandas as pd
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.ticker import FormatStrFormatter
+from matplotlib.ticker import FixedLocator
 #%%
 def compute_standard_regression(y_true,y_pred,n,p):
     ss_res = np.sum((y_true - y_pred)**2)
-    return(np.sqrt(ss_res/(n-p-1)))
+    return(np.sqrt(ss_res/(n-p)))
 #%% scaling varibles
 width      = 0.025     # micron
 dutyRatio  = 1         # dimension less
@@ -43,7 +45,8 @@ diff = maxl-minl
 for length in dfvl_M.length.unique():
     tempdfm = dfvl_M[dfvl_M.length == length]
     tempdfs = dfvl_S[dfvl_S.length == length]
-    plt.errorbar(tempdfm.density,tempdfm["y-freq"],tempdfs["y-freq"],color=cmap((length-minl)/diff))
+    #plt.errorbar(tempdfm.density,tempdfm["y-freq"],tempdfs["y-freq"],color=cmap((length-minl)/diff))
+    plt.errorbar(tempdfm.density,(tempdfm["y-freq"]+tempdfm["x-freq"])/2,(tempdfs["y-freq"]+tempdfs["x-freq"])/2,color=cmap((length-minl)/diff),lw=1)
 
 plt.xlabel(r"$\rho_{m}$ (Motors/$\mu$m$^{2}$)",fontsize=15)
 plt.ylabel(r"$\nu$ ($1/s$)",fontsize=15)
@@ -58,13 +61,16 @@ plt.tight_layout()
 plt.savefig(f"{figureFolder}/raw-vl-freq-density.pdf")
 plt.close("all")
 #%%%% rescaling variables
-dfvl["chi"] = (dfvl["y-freq"]*(dfvl.pl*Kbt)**(1/3))/motorVelocity
+dfvl["chi"] = ((dfvl["y-freq"]+dfvl["x-freq"])/2*(dfvl.pl*Kbt)**(1/3))/dfvl.velocity
 #%%%% plotting trasformed data
 tempdf = dfvl
 tempdf = tempdf.groupby(["length","density"]).mean().reset_index()
 
+maxl = dfvl.length.max()
+minl = dfvl.length.min()
+
 fig,ax = plt.subplots(figsize=(4,3))
-plt.scatter(tempdf.lfd,tempdf.chi,c=tempdf.length,cmap="turbo")
+plt.scatter(tempdf.lfd,tempdf.chi,edgecolor=cmap((tempdf.length-minl)/(maxl-minl)),facecolor="none")
 
 x  = tempdf.lfd
 y  = tempdf.chi
@@ -83,8 +89,20 @@ plt.xlabel(r"$f$ (pN/$\mu$m)",fontsize=15)
 plt.tick_params(labelsize=15)
 plt.xscale("log")
 plt.yscale("log")
-plt.tight_layout()
+
+ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+ax.xaxis.set_minor_formatter(FormatStrFormatter('%g'))
+ax.yaxis.set_minor_formatter(FormatStrFormatter('%g'))
+ax.tick_params(axis='both', which='minor', labelsize=15, label1On=True)
+ax.xaxis.set_minor_locator(FixedLocator([5,10,15,20,25,30]))
+ax.yaxis.set_minor_locator(FixedLocator([0.25,0.5,0.75,1,2]))
+ax.tick_params(which='minor', length=3.5,width=1, color='black')
+
 plt.ylim(1e-1,1)
+
+plt.tight_layout()
+#plt.show()
 plt.savefig(f"{figureFolder}/scaled-vl-chi-epsilon.pdf")
 plt.close("all")
 #%% Analysis of constant lp data
@@ -102,7 +120,7 @@ diff = maxl-minl
 for length in dfcl_M.length.unique():
     tempdfm = dfcl_M[dfcl_M.length == length]
     tempdfs = dfcl_S[dfcl_S.length == length]
-    plt.errorbar(tempdfm.density,tempdfm["y-freq"],yerr=tempdfs["y-freq"],color=cmap((length-minl)/diff))
+    plt.errorbar(tempdfm.density,(tempdfm["y-freq"]+tempdfm["x-freq"])/2,(tempdfs["y-freq"]+tempdfs["x-freq"])/2,color=cmap((length-minl)/diff),lw=1)
 
 cm = plt.colorbar(matplotlib.cm.ScalarMappable(cmap=cmap,norm=plt.Normalize(minl,maxl)),ax=ax)
 cm.ax.set_ylabel(r"$L$ $(\mu m)$",fontsize=15)
@@ -116,13 +134,16 @@ plt.tight_layout()
 plt.savefig(f"{figureFolder}/raw-cl-freq-density.pdf")
 plt.close("all")
 #%%%% rescaling variables
-dfcl["chi"] = (dfcl["y-freq"]*(dfcl.pl*Kbt)**(1/3))/motorVelocity
+dfcl["chi"] = ((dfcl["y-freq"]+dfcl["y-freq"])/2*(dfcl.pl*Kbt)**(1/3))/dfcl.velocity
 #%%%% plotting trasformed data
 tempdf = dfcl
 tempdf.groupby(["length","density"]).mean().reset_index()
 
+maxl = dfcl.length.max()
+minl = dfcl.length.min()
+
 fig,ax = plt.subplots(figsize=(4,3))
-plt.scatter(tempdf.lfd,tempdf.chi,c=tempdf.length,cmap="turbo")
+plt.scatter(tempdf.lfd,tempdf.chi,edgecolor=cmap((tempdf.length-minl)/(maxl-minl)),facecolor="none")
 
 x  = tempdf.lfd
 y  = tempdf.chi
@@ -142,6 +163,16 @@ plt.tick_params(labelsize=15)
 plt.xscale("log")
 plt.yscale("log")
 plt.ylim(1e-1,1)
+
+ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+ax.xaxis.set_minor_formatter(FormatStrFormatter('%g'))
+ax.yaxis.set_minor_formatter(FormatStrFormatter('%g'))
+ax.tick_params(axis='both', which='minor', labelsize=15, label1On=True)
+ax.xaxis.set_minor_locator(FixedLocator([5,10,15,20,25,30]))
+ax.yaxis.set_minor_locator(FixedLocator([0.25,0.5,0.75,1,2]))
+ax.tick_params(which='minor', length=3.5,width=1, color='black')
+
 plt.tight_layout()
 plt.savefig(f"{figureFolder}/scaled-cl-chi-epsilon.pdf")
 plt.close("all")

@@ -12,6 +12,10 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import os
 import matplotlib
+# %%
+from matplotlib.ticker import FormatStrFormatter
+
+from matplotlib.ticker import FixedLocator
 #%% scaling varibles
 width      = 0.025     # micron
 dutyRatio  = 1         # dimension less
@@ -23,8 +27,8 @@ figureFolder = "freq-length"
 #%%
 def compute_standard_regression(y_true,y_pred,n,p):
     ss_res = np.sum((y_true - y_pred)**2)
-    return(ss_res)
-#    return(np.sqrt(ss_res/(n-p-1)))
+#    return(ss_res)
+    return(np.sqrt(ss_res/(n-p)))
 #%% taken from pampaloni et al.
 lpinf = 6300
 pl = lambda l: lpinf/(1+441/l**2)
@@ -50,7 +54,7 @@ for density in dfvl_M.density.unique():
     tempdfm = dfvl_M[dfvl_M.density == density]
     tempdfs = dfvl_S[dfvl_S.density == density]
 
-    plt.errorbar(tempdfm.length,tempdfm["y-freq"],tempdfs["y-freq"],color=cmap((density-mind)/diff),lw=1)
+    plt.errorbar(tempdfm.length,(tempdfm["y-freq"]+tempdfm["x-freq"])/2,(tempdfs["y-freq"]+tempdfs["x-freq"])/2,color=cmap((density-mind)/diff),lw=1)
 
 cm=plt.colorbar(matplotlib.cm.ScalarMappable(cmap=cmap,norm=plt.Normalize(mind,maxd)),ax=ax)
 cm.ax.set_ylabel(r"$\rho_{m}$  (Motors/($\mu$m$^{2}$)",fontsize=15)
@@ -65,24 +69,15 @@ plt.tight_layout()
 plt.savefig(f"{figureFolder}/raw-vl-freq-length.pdf")
 plt.close("all")
 #%%%% rescaling variables
-dfvl['theta'] =  (dfvl["y-freq"])*(Kbt/dfvl.lfd)**(1/3)/motorVelocity
-#%%%% plotting trasformed data
+dfvl['theta'] =  (dfvl["y-freq"])*(Kbt/dfvl.lfd)**(1/3)/dfvl.velocity
+#%%
 tempdf = dfvl
 tempdf = tempdf.groupby(["length","density"]).mean().reset_index()
 dmin = tempdf.density.min()
 dmax = tempdf.density.max()
 
 fig,ax = plt.subplots(figsize=(4.1,3))
-plt.scatter(tempdf.length,tempdf.theta,color=cmap((tempdf.density-dmin)/(dmax-dmin)))
-
-# theoretical fitting to constant persistence length model 
-y = tempdf.theta
-x = tempdf.length
-fit1 = lambda x,a: a/(pl(x))**(1/3)
-(a),(_) = curve_fit(fit1,x,y,method="trf")
-SER = compute_standard_regression(y,fit1(x,a),len(y),1)
-x = np.linspace(4,31)
-plt.plot(x,fit1(x,a),ls="--",label=r"%s$/\ell_{p}^{v~1/3}$ [%4.2e]"%(np.round(a[0],3),SER),lw=2,color="black")
+plt.scatter(tempdf.length,tempdf.theta,edgecolor=cmap((tempdf.density-dmin)/(dmax-dmin)),facecolor="none")
 
 # theoretical fitting to variable persistence length model 
 y = tempdf.theta
@@ -94,19 +89,32 @@ x = np.linspace(4,31)
 plt.plot(x,fit1(x,a),ls="-.",label=r"%s$/\ell_{p}^{c~1/3}$ [%4.2e]"%(np.round(a[0],3),SER),lw=2,color="black")
 
 
+# theoretical fitting to constant persistence length model 
+y = tempdf.theta
+x = tempdf.length
+fit1 = lambda x,a: a/(pl(x))**(1/3)
+(a),(_) = curve_fit(fit1,x,y,method="trf")
+SER = compute_standard_regression(y,fit1(x,a),len(y),1)
+x = np.linspace(4,31)
+plt.plot(x,fit1(x,a),ls="--",label=r"%s$/\ell_{p}^{v~1/3}$ [%4.2e]"%(np.round(a[0],3),SER),lw=2,color="black")
+
+
+
 #colorbar
 cm=plt.colorbar(matplotlib.cm.ScalarMappable(cmap=cmap,norm=plt.Normalize(mind,maxd)),ax=ax)
 cm.ax.set_ylabel(r"$\rho_{m}$  (Motors/$\mu$m$^{2}$)",fontsize=15)
 cm.ax.tick_params(labelsize=15)
+
 
 plt.ticklabel_format(style='sci',axis='y', scilimits=(0, 0))
 plt.ylabel(r"$\Theta$ ($\mu$m$^{1/3}$)",fontsize=15)
 plt.xlabel(r"$L$ ($\mu$m)",fontsize=15)
 plt.tick_params(labelsize=15)
 plt.ylim(2e-3,2e-2)
+
 plt.legend(frameon=False,fontsize=9)
-plt.yscale("log")
 plt.tight_layout()
+#plt.show()
 plt.savefig(f"{figureFolder}/scaled-vl-theta-length-with-overlay.pdf")
 plt.close("all")
 #%% Analysis of constant lp data
@@ -125,7 +133,8 @@ fig,ax = plt.subplots(figsize=(4,3))
 for density in dfcl_M.density.unique():
     tempdfm = dfcl_M[dfcl_M.density == density]
     tempdfs = dfcl_S[dfcl_S.density == density]
-    plt.errorbar(tempdfm.length,tempdfm["y-freq"],tempdfs["y-freq"],color=cmap((density-mind)/diff),lw=1)
+    #plt.errorbar(tempdfm.length,tempdfm["y-freq"],tempdfs["y-freq"],color=cmap((density-mind)/diff),lw=1)
+    plt.errorbar(tempdfm.length,(tempdfm["y-freq"]+tempdfm["x-freq"])/2,(tempdfs["y-freq"]+tempdfs["x-freq"])/2,color=cmap((density-mind)/diff),lw=1)
 
 cm=plt.colorbar(matplotlib.cm.ScalarMappable(cmap=cmap,norm=plt.Normalize(mind,maxd)),ax=ax)
 cm.ax.set_ylabel(r"$\rho_{m}$  Motors/($\mu$m$^{2}$)",fontsize=15)
@@ -138,7 +147,7 @@ plt.tight_layout()
 plt.savefig(f"{figureFolder}/raw-cl-freq-length.pdf")
 plt.close("all")
 #%%%% rescaling variables
-dfcl['theta'] =  (dfcl["y-freq"])*(Kbt/dfcl.lfd)**(1/3)/motorVelocity
+dfcl['theta'] =  (dfcl["y-freq"])*(Kbt/dfcl.lfd)**(1/3)/dfcl.velocity
 #%%%% plotting trasformed data
 tempdf = dfcl
 tempdf = tempdf.groupby(["length","density"]).mean().reset_index()
@@ -146,7 +155,7 @@ dmin = tempdf.density.min()
 dmax = tempdf.density.max()
 
 fig,ax = plt.subplots(figsize=(4.1,3))
-plt.scatter(tempdf.length,tempdf.theta,color=cmap((tempdf.density-dmin)/(dmax-dmin)))
+plt.scatter(tempdf.length,tempdf.theta,edgecolor=cmap((tempdf.density-dmin)/(dmax-dmin)),facecolor="none")
 
 # theoretical fitting to constant persistence length model 
 x = tempdf.length
@@ -171,13 +180,25 @@ cm=plt.colorbar(matplotlib.cm.ScalarMappable(cmap=cmap,norm=plt.Normalize(mind,m
 cm.ax.set_ylabel(r"$\rho_{m}$  (Motors/$\mu$m$^{2}$)",fontsize=15)
 cm.ax.tick_params(labelsize=15)
 
-plt.ticklabel_format(style='sci',axis='y', scilimits=(0, 0))
+#plt.yscale("log")
+plt.ticklabel_format(style='sci',axis='y', scilimits=(0, 0),useOffset=False)
+#ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+#ax.xaxis.set_major_formatter(FormatStrFormatter('%4.2E'))
+#ax.xaxis.set_minor_formatter(FormatStrFormatter('%g'))
+#ax.yaxis.set_minor_formatter(FormatStrFormatter('%4.1e'))
+#ax.tick_params(axis='both', which='minor', labelsize=15, label1On=True)
+#ax.xaxis.set_minor_locator(FixedLocator([5,10,15,20,25,30]))
+#ax.yaxis.set_minor_locator(FixedLocator([2.5e-3]))
+#ax.tick_params(which='minor', length=3.5,width=1, color='black')
+
+
+
 plt.ylabel(r"$\Theta$ ($\mu$m$^{1/3}$)",fontsize=15)
 plt.xlabel(r"$L$ ($\mu$m)",fontsize=15)
 plt.tick_params(labelsize=15)
 plt.ylim(2e-3,2e-2)
 plt.legend(frameon=False,fontsize=9)
-plt.yscale("log")
 plt.tight_layout()
+#plt.show()
 plt.savefig(f"{figureFolder}/scaled-cl-theta-length-with-overlay.pdf")
 plt.close("all")

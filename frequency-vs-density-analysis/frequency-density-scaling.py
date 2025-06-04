@@ -103,7 +103,7 @@ plt.ylim(1e-1,1)
 
 plt.tight_layout()
 #plt.show()
-plt.savefig(f"{figureFolder}/scaled-vl-chi-epsilon.pdf")
+plt.savefig(f"{figureFolder}/scaled-vl-f-epsilon.pdf")
 plt.close("all")
 #%% Analysis of constant lp data
 dfcl = pd.read_csv("radius-freq-cpl.csv",index_col=0)
@@ -174,5 +174,5 @@ ax.yaxis.set_minor_locator(FixedLocator([0.25,0.5,0.75,1,2]))
 ax.tick_params(which='minor', length=3.5,width=1, color='black')
 
 plt.tight_layout()
-plt.savefig(f"{figureFolder}/scaled-cl-chi-epsilon.pdf")
+plt.savefig(f"{figureFolder}/scaled-cl-f-epsilon.pdf")
 plt.close("all")

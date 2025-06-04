@@ -39,6 +39,14 @@ def getData(filePath:str,totalFrames:int,exclude:int , samplingRate:float):
 
     ## fft estimation
     xfree ,yfree  = data[::Nseg,1:3].T
+    
+    x = xfree[exclude:]
+    y = yfree[exclude:]
+    dx = x[1:]-x[:-1]
+    dy = y[1:]-y[:-1]
+    
+    velocity = np.sqrt(dx**2+dy**2).mean()
+    
 
     ## xtip fft
     signalx = xfree[exclude:]-xfree[exclude:].mean()
@@ -57,12 +65,13 @@ def getData(filePath:str,totalFrames:int,exclude:int , samplingRate:float):
 
     yield xfreqmax
     yield yfreqmax
+    yield velocity
 
 
-for i in getData("constant-lp/rep-3/Density-50/run0025",1201,exclude,1): print(i)
+for i in getData("constant-lp/rep-3/Density-150/run0020",1201,exclude,1): print(i)
 
 # manual estimation
-filePath = "constant-lp/rep-3/Density-50/run0025"
+filePath = "constant-lp/rep-3/Density-150/run0020"
 
 data = np.loadtxt(os.path.join(filePath,"points.dat"),comments="%")
 
@@ -99,12 +108,12 @@ xfreqmax = freqx[np.argmax(np.abs(fftTipx)*2/len(signalx))]
 yfreqmax = freqy[np.argmax(np.abs(fftTipy)*2/len(signaly))]
 
 #plt.figure()
-plt.plot(np.abs(fftTipx)*2/len(signalx))
+#plt.plot(np.abs(fftTipx)*2/len(signalx))
 plt.show()
-plt.plot(yfree)
-plt.show()
+#plt.plot(yfree)
+#plt.show()
 # %% Analysis for constant persistence length
-columns = ["rep","length","density","radius","x-freq","y-freq"]
+columns = ["rep","length","density","radius","x-freq","y-freq","velocity"]
 df = pd.DataFrame(columns=columns)
 
 temp = {}
@@ -123,22 +132,20 @@ for rep in range(2,22):
 df.to_csv("radius-freq-cpl.csv")
 
 # %% Performing analysis on variable persistence length simulations
-columns = ["rep","length","density","radius","x-freq","y-freq"]
+columns = ["rep","length","density","radius","x-freq","y-freq","velocity"]
 df = pd.DataFrame(columns=columns)
 
 temp = {}
 for i in columns: temp.update({i:0})
-for rep in range(9,22):
+for rep in range(2,22):
     for density in np.arange(50,201,25)[:]:
-        for length,folder in enumerate(np.arange(26)[:],5):
+        for length,folder in enumerate(np.arange(26),5):
             temp["length"] = length
             temp["density"] = density
             temp["rep"] = rep
-
             filePath = os.path.join("variable-lp","rep-%d"%rep,"Density-%d"%density,"run%04d"%folder)
             print(filePath)
             for j,i in enumerate(getData(filePath, totalFrames, exclude, samplingRate),3):
-                #print(columns[j],i)
                 temp[columns[j]] = i
             df.loc[len(df)] = temp
 df.to_csv("radius-freq-vpl.csv")
